@@ -1,0 +1,120 @@
+# Spectral Linting Rules for API Governance
+# Run: npx spectral lint api.yaml --ruleset rules/spectral.yaml
+
+extends:
+  - spectral:oas
+
+rules:
+  # === Naming Conventions ===
+
+  paths-kebab-case:
+    description: "Paths must use kebab-case"
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/[a-z0-9-{}]+)+$"
+
+  properties-camelCase:
+    description: "JSON properties must use camelCase"
+    severity: warn
+    given: "$..properties[*]~"
+    then:
+      function: casing
+      functionOptions:
+        type: camel
+
+  # === Versioning ===
+
+  path-must-have-version:
+    description: "All paths must include version prefix /v{n}/"
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^/v[0-9]+/"
+
+  # === Error Responses ===
+
+  error-response-problem-details:
+    description: "Error responses (4xx, 5xx) must use Problem Details schema"
+    severity: warn
+    given: "$.paths.*.*.responses[?(@property >= '400')]"
+    then:
+      field: content.application/problem+json
+      function: truthy
+
+  must-have-error-responses:
+    description: "Operations must define at least 400 and 500 responses"
+    severity: warn
+    given: "$.paths.*.*.responses"
+    then:
+      - field: "400"
+        function: truthy
+      - field: "500"
+        function: truthy
+
+  # === Security ===
+
+  must-have-security:
+    description: "All operations must have security defined"
+    severity: error
+    given: "$.paths.*.*"
+    then:
+      field: security
+      function: truthy
+
+  # === Pagination ===
+
+  collection-must-paginate:
+    description: "GET endpoints returning arrays should support pagination"
+    severity: info
+    given: "$.paths.*.get.parameters"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          contains:
+            type: object
+            properties:
+              name:
+                enum: [cursor, page, limit, offset]
+
+  # === Documentation ===
+
+  operation-must-have-summary:
+    description: "Every operation must have a summary"
+    severity: error
+    given: "$.paths.*.*"
+    then:
+      field: summary
+      function: truthy
+
+  operation-must-have-operationId:
+    description: "Every operation must have an operationId"
+    severity: error
+    given: "$.paths.*.*"
+    then:
+      field: operationId
+      function: truthy
+
+  # === Request/Response ===
+
+  no-request-body-on-get:
+    description: "GET operations must not have a request body"
+    severity: error
+    given: "$.paths.*.get"
+    then:
+      field: requestBody
+      function: falsy
+
+  must-use-json:
+    description: "Request and response bodies must use application/json"
+    severity: warn
+    given: "$..content"
+    then:
+      field: "application/json"
+      function: truthy
