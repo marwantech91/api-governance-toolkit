@@ -156,6 +156,13 @@ export function setPaginationHeaders(
   res.setHeader('X-Page', page);
   res.setHeader('X-Per-Page', limit);
   res.setHeader('X-Total-Pages', totalPages);
+
+  if (page > 1) {
+    res.setHeader('X-Has-Previous', 'true');
+  }
+  if (page < totalPages) {
+    res.setHeader('X-Has-Next', 'true');
+  }
 }
 
 // === Combined Middleware ===
